@@ -1,8 +1,12 @@
 package it.polito.tdp.artsmia;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.artsmia.model.Adiacenza;
+import it.polito.tdp.artsmia.model.Artist;
 import it.polito.tdp.artsmia.model.Model;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -31,7 +35,7 @@ public class ArtsmiaController {
     private Button btnCalcolaPercorso;
 
     @FXML
-    private ComboBox<?> boxRuolo;
+    private ComboBox<String> boxRuolo;
 
     @FXML
     private TextField txtArtista;
@@ -41,24 +45,52 @@ public class ArtsmiaController {
 
     @FXML
     void doArtistiConnessi(ActionEvent event) {
+    
     	txtResult.clear();
-    	txtResult.appendText("Calcola artisti connessi");
+    	List<Adiacenza> connessi = new ArrayList<>(this.model.getArtistiConnessi());
+    	txtResult.appendText("ARTISTI CONNESSI: \n");
+    	for(Adiacenza a: connessi) {
+    		txtResult.appendText( a.getA1()+ " --- " + a.getA2() + " #Esposizioni comuni: " + a.getPeso() + "\n");
+    	}
     }
 
     @FXML
     void doCalcolaPercorso(ActionEvent event) {
     	txtResult.clear();
-    	txtResult.appendText("Calcola percorso");
+    	Integer id = 0;
+    	try {
+    		id = Integer.parseInt(txtArtista.getText());
+    	}catch(NumberFormatException e) {
+    		txtResult.appendText("ERRORE: Inserire un numero intero valido come identificatore dell'artista!\n");
+    	    return;
+    	}
+    	if(!this.model.grafoContiene(id)) {
+    		txtResult.appendText("ERRORE: Artista non presente nel grafo. Inserire un identificativo valido tra quelli presenti nel grafo!");
+    	    return;
+    	}
+        
+    	List<Artist> percorso = new ArrayList<>(this.model.trovaPercorso(id));
+    	txtResult.appendText("PERCORSO PIU LUNGO TROVATO con # "+ percorso.size() + " esposizioni condivise:\n");
+    	for(Artist a: percorso) {
+    		txtResult.appendText(a +"\n");
+    	}
     }
 
     @FXML
     void doCreaGrafo(ActionEvent event) {
     	txtResult.clear();
-    	txtResult.appendText("Crea grafo");
-    }
+    	String role = boxRuolo.getValue();
+    	if(role == null) {
+    		txtResult.appendText("ERRORE: Selezionare prima un ruolo dal menu a tendina!\n");
+    	    return;
+    	}
+    	this.model.creaGrafo(role);
+    	btnArtistiConnessi.setDisable(false);
+    	btnCalcolaPercorso.setDisable(false);
 
-    public void setModel(Model model) {
-    	this.model = model;
+    	txtResult.appendText("Grafo creato!\n");
+    	txtResult.appendText("#VERTICI: "+ this.model.nVertici()+"\n");
+    	txtResult.appendText("#ARCHI: "+ this.model.nArchi()+"\n");
     }
 
     
@@ -72,4 +104,13 @@ public class ArtsmiaController {
         assert txtResult != null : "fx:id=\"txtResult\" was not injected: check your FXML file 'Artsmia.fxml'.";
 
     }
+    
+
+    public void setModel(Model model) {
+    	this.model = model;
+    	boxRuolo.getItems().addAll(this.model.getAllRoles());
+    	btnArtistiConnessi.setDisable(true);
+    	btnCalcolaPercorso.setDisable(true);
+    }
+
 }
